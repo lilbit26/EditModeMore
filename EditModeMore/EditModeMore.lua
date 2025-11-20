@@ -41,7 +41,12 @@ end
 
 local function applySettings()
     emm.selectedFrame:SetPoint(emm.point, emm.relativeTo, emm.relativePoint, emm.offsetX, emm.offsetY)
-    emm.selectedFrame:OnSystemPositionChange()
+
+    if emm.selectedFrame.OnSystemPositionChange then
+        emm.selectedFrame:OnSystemPositionChange()
+    elseif EditModeManagerFrame.OnSystemPositionChange then -- TODO: remove when 12.0 is live
+        EditModeManagerFrame:OnSystemPositionChange(emm.selectedFrame)
+    end
 end
 
 local function setupLabel(label)
