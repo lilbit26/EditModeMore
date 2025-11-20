@@ -12,4 +12,4 @@ A World of Warcraft add-on that adds more setting options to Blizzard's Edit Mod
 More features are planned:
 
 - Anchor settings
-- UI scaling related options for perfect-pixel
+- UI scaling related options for pixel-perfect alignment
