@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 - 2025-11-20
+
+- Fix frames with default position
+
 ## 0.2.0 - 2025-11-19
 
 - Add compatibility for retail
