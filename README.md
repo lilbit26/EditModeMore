@@ -6,10 +6,11 @@ A World of Warcraft add-on that adds more setting options to Blizzard's Edit Mod
 
 - Enter X offset and Y offset directly
 - Move buttons
+- Select anchor point
+- Attach frames to other frames freely (including non-blizzard frames)
 
 ## Roadmap
 
 More features are planned:
 
-- Anchor settings
 - UI scaling related options for pixel-perfect alignment
