@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0 - 2025-11-24
+
+- Add pixel-perfect alignment support
+
 ## 0.4.0 - 2025-11-23
 
 - Add anchor settings
