@@ -1,5 +1,9 @@
 local name, emm = ...
 
+local function toActualPixel(value)
+    return math.floor(value / emm.scale + 0.5)
+end
+
 local function toRoundedNumber(text)
     local num = tonumber(text)
     if num == nil then
@@ -9,27 +13,26 @@ local function toRoundedNumber(text)
     end
 end
 
-local function updateCurrentSettings(systemFrame)
-    local point, attachFrame, attachPoint, xOffset, yOffset = systemFrame:GetPoint()
+local function updateCurrentSettings()
+    local point, attachFrame, attachPoint, xOffset, yOffset = emm.selectedFrame:GetPoint()
 
     -- cache current frame info
-    emm.selectedFrame = systemFrame
     emm.point = point
     emm.attachFrame = attachFrame
     emm.attachPoint = attachPoint
-    emm.xOffset = xOffset
-    emm.yOffset = yOffset
+    emm.xOffset = xOffset -- scaled value
+    emm.yOffset = yOffset -- scaled value
 
     -- update current settings values
-    emm.frame.xOffsetContainer.editBox:SetText(tostring(toRoundedNumber(xOffset)))
-    emm.frame.yOffsetContainer.editBox:SetText(tostring(toRoundedNumber(yOffset)))
+    emm.frame.xOffsetContainer.editBox:SetText(tostring(toActualPixel(xOffset)))
+    emm.frame.yOffsetContainer.editBox:SetText(tostring(toActualPixel(yOffset)))
     emm.frame.pointContainer.dropdown:GenerateMenu()
     emm.frame.attachFrameContainer.editBox:SetText(attachFrame:GetName())
     emm.frame.attachPointContainer.dropdown:GenerateMenu()
-    emm.frame.frameNameContainer.editBox:SetText(systemFrame:GetName())
+    emm.frame.frameNameContainer.editBox:SetText(emm.selectedFrame:GetName())
 end
 
-local function disableOffsetSettings()
+local function disableSettings()
     emm.frame.xOffsetContainer.editBox:Disable()
     emm.frame.xOffsetContainer.leftButton:Disable()
     emm.frame.xOffsetContainer.rightButton:Disable()
@@ -43,7 +46,7 @@ local function disableOffsetSettings()
     emm.frame.disabledMessage:Show()
 end
 
-local function enableOffsetSettings()
+local function enableSettings()
     emm.frame.xOffsetContainer.editBox:Enable()
     emm.frame.xOffsetContainer.leftButton:Enable()
     emm.frame.xOffsetContainer.rightButton:Enable()
@@ -57,14 +60,14 @@ local function enableOffsetSettings()
     emm.frame.disabledMessage:Hide()
 end
 
-local function updateDialog(systemFrame)
+local function updateDialog()
     if not EditModeSystemSettingsDialog:IsShown() then return end
 
-    updateCurrentSettings(systemFrame)
+    updateCurrentSettings()
     if emm.selectedFrame.isManagedFrame and emm.selectedFrame:IsInDefaultPosition() and emm.attachFrame:GetName() == "UIParentBottomManagedFrameContainer" then
-        disableOffsetSettings()
+        disableSettings()
     else
-        enableOffsetSettings()
+        enableSettings()
     end
 
     emm.frame:ClearAllPoints()
@@ -241,6 +244,13 @@ local function setupRelativePointDropdown(dropdown)
     end)
 end
 
+local function updateScale()
+    local _, height = GetPhysicalScreenSize()
+    local uiScale = UIParent:GetScale()
+
+    emm.scale = 768 / uiScale / height -- size of 1 px
+end
+
 -- main function
 local function main()
     -- settings frame
@@ -286,7 +296,7 @@ local function main()
         if offset == nil then
             xOffsetEditBox:SetText(emm.oldText)
         else
-            emm.xOffset = offset
+            emm.xOffset = offset * emm.scale
             applySettings()
         end
     end)
@@ -298,9 +308,9 @@ local function main()
     xOffsetLeftButton:SetSize(28, 28)
     xOffsetLeftButton:SetScript("OnClick", function()
         if IsShiftKeyDown() then
-            emm.xOffset = emm.xOffset - 10
+            emm.xOffset = emm.xOffset - 10 * emm.scale
         else
-            emm.xOffset = emm.xOffset - 1
+            emm.xOffset = emm.xOffset - emm.scale
         end
         applySettings()
     end)
@@ -312,9 +322,9 @@ local function main()
     xOffsetRightButton:SetSize(28, 28)
     xOffsetRightButton:SetScript("OnClick", function()
         if IsShiftKeyDown() then
-            emm.xOffset = emm.xOffset + 10
+            emm.xOffset = emm.xOffset + 10 * emm.scale
         else
-            emm.xOffset = emm.xOffset + 1
+            emm.xOffset = emm.xOffset + emm.scale
         end
         applySettings()
     end)
@@ -343,7 +353,7 @@ local function main()
         if offset == nil then
             yOffsetEditBox:SetText(emm.oldText)
         else
-            emm.yOffset = offset
+            emm.yOffset = offset * emm.scale
             applySettings()
         end
     end)
@@ -355,9 +365,9 @@ local function main()
     yOffsetDownButton:SetSize(28, 28)
     yOffsetDownButton:SetScript("OnClick", function()
         if IsShiftKeyDown() then
-            emm.yOffset = emm.yOffset - 10
+            emm.yOffset = emm.yOffset - 10 * emm.scale
         else
-            emm.yOffset = emm.yOffset - 1
+            emm.yOffset = emm.yOffset - emm.scale
         end
         applySettings()
     end)
@@ -369,9 +379,9 @@ local function main()
     yOffsetUpButton:SetSize(28, 28)
     yOffsetUpButton:SetScript("OnClick", function()
         if IsShiftKeyDown() then
-            emm.yOffset = emm.yOffset + 10
+            emm.yOffset = emm.yOffset + 10 * emm.scale
         else
-            emm.yOffset = emm.yOffset + 1
+            emm.yOffset = emm.yOffset + emm.scale
         end
         applySettings()
     end)
@@ -480,26 +490,42 @@ local function main()
     frame.disabledMessage = disabledMessage
 
     -- hooks
-    hooksecurefunc(EditModeSystemSettingsDialog, "UpdateDialog", function(_, systemFrame)
-        updateDialog(systemFrame)
-    end)
-
     hooksecurefunc(EditModeManagerFrame, "SelectSystem", function(_, selectFrame)
         if selectFrame ~= emm.selectedFrame then
-            updateDialog(selectFrame)
+            emm.selectedFrame = selectFrame
+            updateDialog()
+
+            -- print(emm.selectedFrame:GetScript("OnReceiveDrag"))
+            emm.selectedFrame:HookScript("OnReceiveDrag", function()
+                print("OnReceiveDrag")
+            end)
         end
     end)
 
     hooksecurefunc(EditModeManagerFrame, "ClearSelectedSystem", function()
         emm.selectedFrame = nil
     end)
+
+    hooksecurefunc(EditModeSystemSettingsDialog, "UpdateDialog", function()
+        updateDialog()
+    end)
+
+    -- in case other addon changes ui scale
+    hooksecurefunc(UIParent, "SetScale", function()
+        updateScale()
+    end)
 end
 
--- fire on addon loaded
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
-f:SetScript("OnEvent", function(_, _, addOnName)
-    if addOnName == name then
-        main()
+f:RegisterEvent("UI_SCALE_CHANGED")
+f:SetScript("OnEvent", function(_, event, ...)
+    if event == "ADDON_LOADED" then
+        local addOnName = ...
+        if addOnName == name then
+            main()
+        end
+    elseif event == "UI_SCALE_CHANGED" then
+        updateScale()
     end
 end)
